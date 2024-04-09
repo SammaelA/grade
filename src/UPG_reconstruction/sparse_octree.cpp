@@ -346,8 +346,8 @@ void all_to_valid_nodes_remap_rec(const std::vector<SparseOctreeBuilder::Node> &
 void SparseOctreeBuilder::construct_bottom_up_finish()
 {
   auto &nodes = get_nodes();
-  auto p = estimate_quality(10, 100000);
-  printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
+  //auto p = estimate_quality(10, 100000);
+  //printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 
   std::vector<int> valid_remap(nodes.size(), -1);
   unsigned valid_count = 1;
@@ -370,25 +370,25 @@ void SparseOctreeBuilder::construct_bottom_up_finish()
   
   nodes = valid_nodes;
 
-  printf("SDF octree created with %u (%5.1f%%) nodes (dense one would have %u)\n", 
-         valid_count, 100.0f*valid_count/(unsigned)valid_remap.size(), (unsigned)valid_remap.size());
+  //printf("SDF octree created with %u (%5.1f%%) nodes (dense one would have %u)\n", 
+  //       valid_count, 100.0f*valid_count/(unsigned)valid_remap.size(), (unsigned)valid_remap.size());
 }
 
-void SparseOctreeBuilder::construct_bottom_up_base()
+void SparseOctreeBuilder::construct_bottom_up_base(unsigned start_depth, float3 start_p, float start_d)
 {
   auto &nodes = get_nodes();
   nodes.clear();
-  nodes.reserve((8.0/7)*std::pow(8, settings.depth));
+  nodes.reserve((8.0/7)*std::pow(8, settings.depth-start_depth));
 
   // create regular grid
   nodes.emplace_back();
-  add_node_rec(0, 0, settings.depth, float3(0, 0, 0), 1.0f);
+  add_node_rec(0, start_depth, settings.depth, start_p, start_d);
 
   //remove non-borders nodes
-  remove_non_border_rec(nodes, settings.min_remove_level, 0, 0);
+  remove_non_border_rec(nodes, settings.min_remove_level, 0, start_depth);
 
   //remove when a little is changed
-  remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, 0, float3(0, 0, 0), 1.0f);  
+  remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, start_depth, start_p, start_d);  
 }
 
 void SparseOctreeBuilder::construct_bottom_up(std::function<T(const float3 &)> _sdf, SparseOctreeSettings _settings)
@@ -397,7 +397,7 @@ void SparseOctreeBuilder::construct_bottom_up(std::function<T(const float3 &)> _
   settings = _settings;
   octree_f->get_nodes().clear();
 
-  construct_bottom_up_base();
+  construct_bottom_up_base(0u, float3(0,0,0), 1.0f);
   construct_bottom_up_finish();
 }
 
@@ -536,7 +536,7 @@ void SparseOctreeBuilder::construct_bottom_up_blocks(std::function<T(const float
   unsigned max_depth_blocks = settings.depth - log2(max_block_size);
 
   //I - construct octree, leaving removed modes intact but with INVALID_IDX flad for their offsets
-  construct_bottom_up_base();
+  construct_bottom_up_base(0u, float3(0,0,0), 1.0f);
 
   //II - restore invalid nodes in active blocks
   std::vector<std::vector<bool>> block_active;
@@ -660,15 +660,94 @@ void fill_octree_frame_rec(std::function<SparseOctreeBuilder::T(const float3 &)>
   }
 }
 
-//void SparseOctreeBuilder::construct_large_cell_rec(std::function<T(const float3 &)> f, SparseOctreeSettings settings,
-//                                                   float3 p, float d)
-//{
-
-//}
-
-void SparseOctreeBuilder::construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+void SparseOctreeBuilder::construct_large_cell_rec(std::vector<Node> &final_nodes, unsigned root_idx, unsigned level, float3 p, float d)
 {
+  //construct octree in this large cell
+  if (level == settings.min_remove_level)
+  {
 
+  }
+}
+
+//large node is a smallest unit for which octree can be built independently from other units
+struct LargeNode
+{
+  float3 p;
+  float d;
+  unsigned level;
+  unsigned root_idx;
+  unsigned children_idx;
+};
+
+void SparseOctreeBuilder::construct(std::function<T(const float3 &)> _sdf, SparseOctreeSettings _settings)
+{
+  sdf = _sdf;
+  settings = _settings;
+
+std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+  std::vector<LargeNode> large_nodes;
+  large_nodes.push_back({float3(0,0,0), 1.0f, 0u, 0u, 0u});
+
+  unsigned i = 0;
+  while (i < large_nodes.size())
+  {
+    if (large_nodes[i].level < settings.min_remove_level)
+    {
+      large_nodes[i].children_idx = large_nodes.size();
+      for (int j=0;j<8;j++)
+      {
+        float ch_d = large_nodes[i].d / 2;
+        float3 ch_p = 2 * large_nodes[i].p + float3((j & 4) >> 2, (j & 2) >> 1, j & 1);
+        large_nodes.push_back({ch_p, ch_d, large_nodes[i].level+1, i, 0u});
+      }
+    }
+    i++;
+  }
+
+  std::vector<Node> all_nodes;
+  all_nodes.resize(large_nodes.size());
+  for (int i=0;i<large_nodes.size();i++)
+  {
+    all_nodes[i].offset = large_nodes[i].children_idx;
+    all_nodes[i].value = sdf(2.0f * ((large_nodes[i].p + float3(0.5, 0.5, 0.5)) * large_nodes[i].d) - float3(1, 1, 1));
+  }
+
+  for (int i=0;i<large_nodes.size();i++)
+  {
+    //if it is a leaf (as a large node) and it can contain borders (with some additional confidence mult 1.05)
+    if (large_nodes[i].children_idx == 0 && (all_nodes[i].value < 1.05f*sqrt(2)*std::pow(2,-large_nodes[i].level)))
+    {
+      construct_bottom_up_base(large_nodes[i].level, large_nodes[i].p, large_nodes[i].d);
+      construct_bottom_up_finish();
+
+      if (get_nodes().size() > 1)
+      {
+        //printf("create octree for node (%f %f %f) - %d nodes\n", large_nodes[i].p.x, large_nodes[i].p.y, large_nodes[i].p.z,
+        //       (int)(get_nodes().size()));
+        unsigned off = all_nodes.size();
+        all_nodes[i].offset = off;
+        all_nodes.reserve(all_nodes.size() + get_nodes().size() - 1);
+        all_nodes.insert(all_nodes.end(), get_nodes().begin()+1, get_nodes().end()); //skip root node of get_nodes() as it is already in all_nodes
+        for (int j=off; j<all_nodes.size(); j++) 
+        {
+          if (!is_leaf(all_nodes[j].offset))
+            all_nodes[j].offset += off-1;
+        }
+      }
+    }
+  }
+
+  get_nodes() = all_nodes;
+  
+std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+  
+  float time_1 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+  unsigned long n_real = get_nodes().size();
+  unsigned long n_max = pow(8, settings.depth);
+  
+  printf("SDF octree created with %lu (%5.2lf%%) nodes (dense one would have %lu)\n", n_real, 100.0*n_real/n_max, n_max);
+  printf("time spent (ms) %.1f\n", time_1);
 }
 
 void SparseOctreeBuilder::convert_to_frame_octree(std::vector<SdfFrameOctreeNode> &out_frame)
@@ -686,7 +765,7 @@ void SparseOctreeBuilder::construct_bottom_up_frame(std::function<T(const float3
   octree_f->get_nodes().clear();
 
 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  construct_bottom_up_base();
+  construct_bottom_up_base(0u, float3(0,0,0), 1.0f);
 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   construct_bottom_up_finish();
 std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
@@ -698,5 +777,9 @@ std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   float time_1 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   float time_2 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
   float time_3 = 1e-3f*std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3).count();
+  unsigned long n_real = get_nodes().size();
+  unsigned long n_max = pow(8, settings.depth);
+  
+  printf("SDF octree created with %lu (%5.2lf%%) nodes (dense one would have %lu)\n", n_real, 100.0*n_real/n_max, n_max);
   printf("time spent (ms) %.1f %.1f %.1f\n", time_1, time_2, time_3);
 }

@@ -109,7 +109,7 @@ public:
                                  std::vector<SdfFrameOctreeNode> &out_frame);
   
   void convert_to_frame_octree(std::vector<SdfFrameOctreeNode> &out_frame);
-  
+
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
@@ -124,9 +124,9 @@ protected:
   void add_node_rec(unsigned node_idx, unsigned depth, unsigned max_depth, float3 p, float d);
   void split_children(unsigned node_idx, float threshold, float3 p, float d, unsigned level);
 
-  void construct_bottom_up_base();
+  void construct_bottom_up_base(unsigned start_depth, float3 start_p, float start_d);
   void construct_bottom_up_finish();
-  void construct_large_cell_rec(unsigned level, float3 p, float d);
+  void construct_large_cell_rec(std::vector<Node> &final_nodes, unsigned root_idx, unsigned level, float3 p, float d);
 
   std::shared_ptr<ISdfOctreeFunction> octree_f; //0 node is root
   std::function<T(const float3 &)> sdf;

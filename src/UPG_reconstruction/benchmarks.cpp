@@ -1497,11 +1497,19 @@ auto t2 = std::chrono::steady_clock::now();
     mesh_bvh.init(mesh);
 
     SparseOctreeBuilder builder;
-    SparseOctreeSettings settings{8, 4, 0.000f};
+    SparseOctreeSettings settings{8, 4, 0.01f};
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
-    builder.construct_bottom_up_frame([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, 
-                                      settings, frame_nodes);
+    {
+    //to test before/after performance
+    //SparseOctreeBuilder builder_2;
+    //std::vector<SdfFrameOctreeNode> frame_nodes_2;
+    //builder_2.construct_bottom_up_frame([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, 
+    //                                    settings, frame_nodes_2);
+    }
+
+    builder.construct([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, settings);
+    builder.convert_to_frame_octree(frame_nodes);
     
     CameraSettings camera;
     camera.origin = float3(2,0,2);
@@ -1537,6 +1545,9 @@ auto t2 = std::chrono::steady_clock::now();
 
   void perform_benchmarks(const Block &blk)
   {    
+    mesh_bvh_test();
+    return;
+
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);
