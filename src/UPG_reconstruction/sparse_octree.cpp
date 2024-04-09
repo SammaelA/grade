@@ -21,15 +21,10 @@ bool is_leaf(unsigned offset)
   return (offset == 0) || (offset & INVALID_IDX);
 }
 
-void SparseOctreeBuilder::add_node_rec(std::function<T(const float3 &)> f,
-                                unsigned node_idx,
-                                unsigned depth,
-                                unsigned max_depth,
-                                float3 p,
-                                float d)
+void SparseOctreeBuilder::add_node_rec(unsigned node_idx, unsigned depth, unsigned max_depth, float3 p, float d)
 {
   auto &nodes = get_nodes();
-  nodes[node_idx].value = f(2.0f * ((p + float3(0.5, 0.5, 0.5)) * d) - float3(1, 1, 1));
+  nodes[node_idx].value = sdf(2.0f * ((p + float3(0.5, 0.5, 0.5)) * d) - float3(1, 1, 1));
 
   if (depth < max_depth)
   {
@@ -39,19 +34,14 @@ void SparseOctreeBuilder::add_node_rec(std::function<T(const float3 &)> f,
     unsigned idx = nodes[node_idx].offset;
     for (unsigned cid = 0; cid < 8; cid++)
     {
-      add_node_rec(f, idx + cid, depth + 1, max_depth, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d / 2);
+      add_node_rec(idx + cid, depth + 1, max_depth, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d / 2);
     }
   }
 }
 
 bool DBG = false;
 
-void SparseOctreeBuilder::split_children(std::function<T(const float3 &)> f,
-                                  unsigned node_idx,
-                                  float threshold,
-                                  float3 p,
-                                  float d,
-                                  unsigned level)
+void SparseOctreeBuilder::split_children(unsigned node_idx, float threshold, float3 p, float d, unsigned level)
 {
   auto &nodes = get_nodes();
   assert(!is_leaf(nodes[node_idx].offset));
@@ -63,14 +53,14 @@ void SparseOctreeBuilder::split_children(std::function<T(const float3 &)> f,
   {
     if (!is_leaf(nodes[idx + cid].offset)) // go deeper
     {
-      split_children(f, idx + cid, threshold, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d/2, level+1);
+      split_children(idx + cid, threshold, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d/2, level+1);
     }
     else if (is_border(abs(nodes[idx + cid].value), level)) // child is leaf, check if we should split it
     {
       //printf("LOL %u %u %u\n",(cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
       float3 p1 = 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
       float3 p2 = (p1+float3(0.5,0.5,0.5)) * (d/2);
-      float d1 = f(2.0f*p2-1.0f);
+      float d1 = sdf(2.0f*p2-1.0f);
       float d2 = sample_closest(2.0f*p2-1.0f);
       if (abs(d1-d2)>1e-4)
         printf("ERRRR %f %f %f --- %f %f\n",p2.x, p2.y, p2.z, d1,d2);
@@ -83,7 +73,7 @@ void SparseOctreeBuilder::split_children(std::function<T(const float3 &)> f,
         float3 n_pos = 0.5f*float3(0.5f + ((s & 4) >> 2), 0.5f + ((s & 2) >> 1), 0.5f + (s & 1));
         float3 pos = (p1 + n_pos) * (d/2);
         pos = (p1 + float3(urand(), urand(), urand())) * (d/2);
-        float d_ref = f(2.0f*pos-1.0f);
+        float d_ref = sdf(2.0f*pos-1.0f);
         float d_sample = sample(2.0f*pos-1.0f);
         float diff = abs(d_ref - d_sample);
         av_diff += diff;
@@ -106,14 +96,11 @@ void SparseOctreeBuilder::split_children(std::function<T(const float3 &)> f,
         for (unsigned gcid = 0; gcid < 8; gcid++)
         {
           float3 pos = (p1 + 0.5f*float3(0.5f + ((gcid & 4) >> 2), 0.5f + ((gcid & 2) >> 1), 0.5f + (gcid & 1))) * (d/2);
-          nodes[gc_idx + gcid].value = f(2.0f*pos-1.0f);
-          //printf("%u putf %f %f %f -- %f\n",gc_idx + gcid, pos.x,pos.y,pos.z, nodes[gc_idx + gcid].value);
-          //add_node_rec(f, idx + cid, depth + 1, max_depth, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d / 2);
+          nodes[gc_idx + gcid].value = sdf(2.0f*pos-1.0f);
         }        
       }
     }
   }
-  //    add_node_rec(f, octree, idx+cid, depth+1, max_depth, 2*p + float3((cid&4)<<2,(cid&2)<<1,cid&1), d/2);
 }
 
 SparseOctreeBuilder::T SparseOctreeBuilder::sample(const float3 &position, unsigned max_level) const
@@ -210,7 +197,7 @@ void SparseOctreeBuilder::print_stat() const
   }
 }
 
-std::pair<float,float> SparseOctreeBuilder::estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr, unsigned samples) const
+std::pair<float,float> SparseOctreeBuilder::estimate_quality(float dist_thr, unsigned samples) const
 {
   stat::Bins<float> stat_box(0.0f, 0.1f);
   unsigned i = 0;
@@ -218,7 +205,7 @@ std::pair<float,float> SparseOctreeBuilder::estimate_quality(std::function<T(con
   while (i < samples)
   {
     float3 p = float3(urand(-1,1),urand(-1,1),urand(-1,1));
-    float ref_d = reference_f(p);
+    float ref_d = sdf(p);
     if (abs(ref_d) < dist_thr)
     {
       differences[i] = sample(p) - ref_d;
@@ -356,10 +343,10 @@ void all_to_valid_nodes_remap_rec(const std::vector<SparseOctreeBuilder::Node> &
   }
 }
 
-void SparseOctreeBuilder::construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+void SparseOctreeBuilder::construct_bottom_up_finish()
 {
   auto &nodes = get_nodes();
-  auto p = estimate_quality(f, 10, 100000);
+  auto p = estimate_quality(10, 100000);
   printf("estimate_quality: %f %f\n", (float)p.first, (float)p.second);
 
   std::vector<int> valid_remap(nodes.size(), -1);
@@ -387,7 +374,7 @@ void SparseOctreeBuilder::construct_bottom_up_finish(std::function<T(const float
          valid_count, 100.0f*valid_count/(unsigned)valid_remap.size(), (unsigned)valid_remap.size());
 }
 
-void SparseOctreeBuilder::construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+void SparseOctreeBuilder::construct_bottom_up_base()
 {
   auto &nodes = get_nodes();
   nodes.clear();
@@ -395,7 +382,7 @@ void SparseOctreeBuilder::construct_bottom_up_base(std::function<T(const float3 
 
   // create regular grid
   nodes.emplace_back();
-  add_node_rec(f, 0, 0, settings.depth, float3(0, 0, 0), 1.0f);
+  add_node_rec(0, 0, settings.depth, float3(0, 0, 0), 1.0f);
 
   //remove non-borders nodes
   remove_non_border_rec(nodes, settings.min_remove_level, 0, 0);
@@ -404,10 +391,14 @@ void SparseOctreeBuilder::construct_bottom_up_base(std::function<T(const float3 
   remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, 0, float3(0, 0, 0), 1.0f);  
 }
 
-void SparseOctreeBuilder::construct_bottom_up(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
+void SparseOctreeBuilder::construct_bottom_up(std::function<T(const float3 &)> _sdf, SparseOctreeSettings _settings)
 {
-  construct_bottom_up_base(f, settings);
-  construct_bottom_up_finish(f, settings);
+  sdf = _sdf;
+  settings = _settings;
+  octree_f->get_nodes().clear();
+
+  construct_bottom_up_base();
+  construct_bottom_up_finish();
 }
 
 struct cmpUint3 {
@@ -534,14 +525,18 @@ void node_values_to_blocks_rec(SparseOctreeBuilder &octree, std::vector<std::vec
   }
 }
 
-void SparseOctreeBuilder::construct_bottom_up_blocks(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
+void SparseOctreeBuilder::construct_bottom_up_blocks(std::function<T(const float3 &)> _sdf, SparseOctreeSettings _settings, 
                                               BlockSparseOctree<T> &out_bso)
 {
+  sdf = _sdf;
+  settings = _settings;
+  octree_f->get_nodes().clear();
+
   unsigned max_block_size = std::max(BlockSparseOctree<float>::BLOCK_SIZE_X, std::max(BlockSparseOctree<float>::BLOCK_SIZE_Y, BlockSparseOctree<float>::BLOCK_SIZE_Z));
   unsigned max_depth_blocks = settings.depth - log2(max_block_size);
 
   //I - construct octree, leaving removed modes intact but with INVALID_IDX flad for their offsets
-  construct_bottom_up_base(f, settings);
+  construct_bottom_up_base();
 
   //II - restore invalid nodes in active blocks
   std::vector<std::vector<bool>> block_active;
@@ -634,7 +629,7 @@ void SparseOctreeBuilder::construct_bottom_up_blocks(std::function<T(const float
   */
 
   //III - finish building octree
-  construct_bottom_up_finish(f, settings);
+  construct_bottom_up_finish();
 }
 
 void fill_octree_frame_rec(std::function<SparseOctreeBuilder::T(const float3 &)> f,   
@@ -676,24 +671,27 @@ void SparseOctreeBuilder::construct(std::function<T(const float3 &)> f, SparseOc
 
 }
 
-void SparseOctreeBuilder::convert_to_frame_octree(const std::vector<Node> &nodes,
-                                                  std::function<T(const float3 &)> f,
-                                                  std::vector<SdfFrameOctreeNode> &out_frame)
+void SparseOctreeBuilder::convert_to_frame_octree(std::vector<SdfFrameOctreeNode> &out_frame)
 {
+  auto &nodes = get_nodes();
   out_frame.resize(nodes.size());
-  fill_octree_frame_rec(f, nodes, out_frame, 0, float3(0,0,0), 1);
+  fill_octree_frame_rec(sdf, nodes, out_frame, 0, float3(0,0,0), 1);
 }
 
-void SparseOctreeBuilder::construct_bottom_up_frame(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
+void SparseOctreeBuilder::construct_bottom_up_frame(std::function<T(const float3 &)> _sdf, SparseOctreeSettings _settings, 
                                                     std::vector<SdfFrameOctreeNode> &out_frame)
 {
+  sdf = _sdf;
+  settings = _settings;
+  octree_f->get_nodes().clear();
+
 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-  construct_bottom_up_base(f, settings);
+  construct_bottom_up_base();
 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-  construct_bottom_up_finish(f, settings);
+  construct_bottom_up_finish();
 std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
 
-  convert_to_frame_octree(get_nodes(), f, out_frame);
+  convert_to_frame_octree(out_frame);
   
 std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
   

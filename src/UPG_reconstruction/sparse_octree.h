@@ -99,9 +99,6 @@ public:
   using T = float;
 
   static bool is_border(float distance, unsigned level);
-  static void convert_to_frame_octree(const std::vector<Node> &nodes,
-                                      std::function<T(const float3 &)> f,
-                                      std::vector<SdfFrameOctreeNode> &out_frame);
 
   SparseOctreeBuilder();
   void construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
@@ -110,25 +107,28 @@ public:
                                   BlockSparseOctree<T> &out_bso);
   void construct_bottom_up_frame(std::function<T(const float3 &)> f, SparseOctreeSettings settings, 
                                  std::vector<SdfFrameOctreeNode> &out_frame);
+  
+  void convert_to_frame_octree(std::vector<SdfFrameOctreeNode> &out_frame);
+  
   T sample(const float3 &pos, unsigned max_level = 1000) const;
   T sample_closest(const float3 &pos) const;
 
   void print_stat() const;
-  std::pair<float,float> estimate_quality(std::function<T(const float3 &)> reference_f, float dist_thr = 0.01, unsigned samples = 10000) const;
+  std::pair<float,float> estimate_quality(float dist_thr = 0.01, unsigned samples = 10000) const;
   std::vector<Node> &get_nodes() { return octree_f->get_nodes(); }
   const std::vector<Node> &get_nodes() const { return octree_f->get_nodes(); }
 
   Node &get_node(unsigned idx) { return octree_f->get_nodes()[idx]; }
   const Node &get_node(unsigned idx) const { return octree_f->get_nodes()[idx]; }
 protected:
-  void add_node_rec(std::function<T(const float3 &)> f, unsigned node_idx, unsigned depth,
-                    unsigned max_depth, float3 p, float d);
-  void split_children(std::function<T(const float3 &)> f, unsigned node_idx,
-                      float threshold, float3 p, float d, unsigned level);
+  void add_node_rec(unsigned node_idx, unsigned depth, unsigned max_depth, float3 p, float d);
+  void split_children(unsigned node_idx, float threshold, float3 p, float d, unsigned level);
 
-  void construct_bottom_up_base(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
-  void construct_bottom_up_finish(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
-  void construct_large_cell_rec(std::function<T(const float3 &)> f, SparseOctreeSettings settings, unsigned level, float3 p, float d);
+  void construct_bottom_up_base();
+  void construct_bottom_up_finish();
+  void construct_large_cell_rec(unsigned level, float3 p, float d);
 
   std::shared_ptr<ISdfOctreeFunction> octree_f; //0 node is root
+  std::function<T(const float3 &)> sdf;
+  SparseOctreeSettings settings;
 };
