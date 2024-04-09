@@ -665,11 +665,11 @@ void fill_octree_frame_rec(std::function<SparseOctreeBuilder::T(const float3 &)>
   }
 }
 
-void SparseOctreeBuilder::construct_large_cell_rec(std::function<T(const float3 &)> f, SparseOctreeSettings settings,
-                                                   float3 p, float d)
-{
+//void SparseOctreeBuilder::construct_large_cell_rec(std::function<T(const float3 &)> f, SparseOctreeSettings settings,
+//                                                   float3 p, float d)
+//{
 
-}
+//}
 
 void SparseOctreeBuilder::construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings)
 {
