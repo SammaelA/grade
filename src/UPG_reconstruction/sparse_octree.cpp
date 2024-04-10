@@ -10,9 +10,9 @@ SparseOctreeBuilder::SparseOctreeBuilder()
   octree_f = get_SdfOctreeFunction({0, nodes.data()});
 }
 
-bool SparseOctreeBuilder::is_border(float distance, unsigned level)
+bool SparseOctreeBuilder::is_border(float distance, int level)
 {
-  return level < 2  ? true : abs(distance) < sqrt(2)*(1/(pow(2, level-2)));
+  return level < 2  ? true : abs(distance) < sqrt(2)*pow(2, -level);
 }
 
 constexpr unsigned INVALID_IDX = 1u<<31u;
@@ -26,7 +26,7 @@ void SparseOctreeBuilder::add_node_rec(unsigned node_idx, unsigned depth, unsign
   auto &nodes = get_nodes();
   nodes[node_idx].value = sdf(2.0f * ((p + float3(0.5, 0.5, 0.5)) * d) - float3(1, 1, 1));
 
-  if (depth < max_depth)
+  if (depth < max_depth && is_border(nodes[node_idx].value, depth))
   {
     nodes[node_idx].offset = nodes.size();
     
@@ -55,7 +55,7 @@ void SparseOctreeBuilder::split_children(unsigned node_idx, float threshold, flo
     {
       split_children(idx + cid, threshold, 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1), d/2, level+1);
     }
-    else if (is_border(abs(nodes[idx + cid].value), level)) // child is leaf, check if we should split it
+    else if (is_border(abs(nodes[idx + cid].value), level+1)) // child is leaf, check if we should split it
     {
       //printf("LOL %u %u %u\n",(cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
       float3 p1 = 2 * p + float3((cid & 4) >> 2, (cid & 2) >> 1, cid & 1);
@@ -253,34 +253,6 @@ float2 invalidate_node_rec(std::vector<SparseOctreeBuilder::Node> &nodes, unsign
     return float2(nodes[idx].value);
 }
 
-void remove_non_border_rec(std::vector<SparseOctreeBuilder::Node> &nodes, unsigned min_level_to_remove, unsigned idx, unsigned level)
-{
-  if (is_leaf(nodes[idx].offset)) 
-    return;
-  
-  bool is_border = false;
-  for (int i=0;i<8;i++)
-  {
-    float dist = nodes[nodes[idx].offset + i].value;
-    if (abs(dist) < sqrt(2)*(1/(pow(2, level-1))))
-    {
-      is_border = true;
-      break;
-    }
-  }
-  
-  if (is_border || level < min_level_to_remove)
-  {
-    for (int i=0;i<8;i++)
-      remove_non_border_rec(nodes, min_level_to_remove, nodes[idx].offset + i, level+1);
-  }
-  else
-  {
-    nodes[idx].value = invalidate_node_rec(nodes, idx).y;
-    nodes[idx].offset |= INVALID_IDX;
-  }
-}
-
 void remove_linear_rec(SparseOctreeBuilder &octree, float thr, unsigned min_level_to_remove, unsigned idx, unsigned level, float3 p, float d)
 {
   unsigned ofs = octree.get_nodes()[idx].offset;
@@ -378,17 +350,14 @@ void SparseOctreeBuilder::construct_bottom_up_base(unsigned start_depth, float3 
 {
   auto &nodes = get_nodes();
   nodes.clear();
-  nodes.reserve((8.0/7)*std::pow(8, settings.depth-start_depth));
 
-  // create regular grid
+  // create octree on border nodes
   nodes.emplace_back();
   add_node_rec(0, start_depth, settings.depth, start_p, start_d);
 
-  //remove non-borders nodes
-  remove_non_border_rec(nodes, settings.min_remove_level, 0, start_depth);
-
-  //remove when a little is changed
-  remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, start_depth, start_p, start_d);  
+  //remove some nodes with estimated error is lower than given threshold
+  if (settings.remove_thr > 0)
+    remove_linear_rec(*this, settings.remove_thr, settings.min_remove_level, 0, start_depth, start_p, start_d);  
 }
 
 void SparseOctreeBuilder::construct_bottom_up(std::function<T(const float3 &)> _sdf, SparseOctreeSettings _settings)
@@ -716,7 +685,7 @@ std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   for (int i=0;i<large_nodes.size();i++)
   {
     //if it is a leaf (as a large node) and it can contain borders (with some additional confidence mult 1.05)
-    if (large_nodes[i].children_idx == 0 && (all_nodes[i].value < 1.05f*sqrt(2)*std::pow(2,-large_nodes[i].level)))
+    if (large_nodes[i].children_idx == 0 && is_border(all_nodes[i].value, large_nodes[i].level))
     {
       construct_bottom_up_base(large_nodes[i].level, large_nodes[i].p, large_nodes[i].d);
       construct_bottom_up_finish();

@@ -1497,7 +1497,7 @@ auto t2 = std::chrono::steady_clock::now();
     mesh_bvh.init(mesh);
 
     SparseOctreeBuilder builder;
-    SparseOctreeSettings settings{8, 4, 0.01f};
+    SparseOctreeSettings settings{9, 4, 0.0f};
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
     {

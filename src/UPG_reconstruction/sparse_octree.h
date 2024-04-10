@@ -98,7 +98,7 @@ public:
   using Node = SdfOctreeNode;
   using T = float;
 
-  static bool is_border(float distance, unsigned level);
+  static bool is_border(float distance, int level);
 
   SparseOctreeBuilder();
   void construct(std::function<T(const float3 &)> f, SparseOctreeSettings settings);
