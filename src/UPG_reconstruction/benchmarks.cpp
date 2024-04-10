@@ -1545,9 +1545,6 @@ auto t2 = std::chrono::steady_clock::now();
 
   void perform_benchmarks(const Block &blk)
   {    
-    mesh_bvh_test();
-    return;
-
     std::string name = blk.get_string("name", "rendering");
     if (name == "rendering")
       benchmark_sdf_rendering(512, 16);
