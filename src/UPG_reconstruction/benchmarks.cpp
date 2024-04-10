@@ -1526,7 +1526,7 @@ auto t2 = std::chrono::steady_clock::now();
     preset.sdf_frame_octree_blas = SDF_FRAME_OCTREE_BLAS_DEFAULT;
     preset.sdf_frame_octree_intersect = SDF_FRAME_OCTREE_INTERSECT_ST;
 
-    auto pRender = CreateMultiRenderer("CPU");
+    auto pRender = CreateMultiRenderer("GPU");
     pRender->SetPreset(preset);
     pRender->SetScene({(unsigned)frame_nodes.size(), 
                        frame_nodes.data()});
