@@ -2,7 +2,7 @@
 #include "upg.h"
 #include "generation_common.h"
 #include "common_utils/bbox.h"
-#include "sparse_octree.h"
+#include "LiteRT/utils/sparse_octree.h"
 #include "sdf_node.h"
 #include <memory>
 #include <functional>
