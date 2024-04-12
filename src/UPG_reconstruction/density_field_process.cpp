@@ -196,17 +196,17 @@ df::create_sdf(const std::vector<float>& density, const VoxelGrid& grid)
 }
 
 std::vector<float>
-df::pipeline(const std::vector<float>& model)
+df::pipeline(const std::vector<float>& model, const int& size, const int& sample_points)
 {
     std::vector<float> sdf_model;
     //  First step
     float3 bounds[2] = {float3(-1.2f,-1.2f,-1.2f), float3(1.2f, 1.2f, 1.2f)};
-    VoxelGrid grid(64, 5, bounds);
+    VoxelGrid grid(size, sample_points, bounds);
 
     std::vector<float> density = df::create_density_field(model, grid);
 
     //  Second
-    // df::erase(density, grid, 0.5);
+    df::erase(density, grid, 0.5);
 
     //  Third
     sdf_model = df::create_sdf(density, grid);
@@ -221,13 +221,13 @@ df::get_index(const size_t& dim_size, const size_t& i, const size_t& j, const si
 }
 
 void
-df::save_sdf(const std::vector<float> &sdf_model, const std::string &file_name)
+df::save_sdf(const std::vector<float> &sdf_model, const int &size, const std::string &file_name)
 {
     std::ofstream file;
     file.open(file_name);
     
     //  Save grid params
-    file << 64 << std::endl;
+    file << size << std::endl;
 
     for (const auto &el : sdf_model)
     {
