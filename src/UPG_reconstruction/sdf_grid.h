@@ -14,16 +14,13 @@ namespace upg
   public:
     static void primitive_SDF_to_grid(ProceduralSdf &sdf, const AABB &bbox, float *grid, unsigned vox_size);
     
-    GridSdfNode(const SdfNodeType::Type &_type, unsigned _grid_size) : PrimitiveSdfNode(_type)
+    GridSdfNode(const SdfNodeType::Type &_type, unsigned _grid_size) : PrimitiveSdfNode(_type), b(8, 0), coefs(64, 0)
     { 
       grid_size = _grid_size;
       grid_size_f = grid_size;
     }
     virtual ~GridSdfNode() = default;
 
-    // Implementation with trilinear interpolation by SVD
-    float get_distance_svd(const float3 &pos, std::span<float> ddist_dp, 
-                       std::span<float> ddist_dpos) const;
     // basic implementation
     float get_distance(const float3 &pos, std::span<float> ddist_dp, 
                        std::span<float> ddist_dpos) const;
@@ -51,5 +48,7 @@ namespace upg
     unsigned grid_size;
     float grid_size_f;
     float3 bbox_size = float3(2,2,2);
+    mutable std::vector<float> b;
+    mutable std::vector<float> coefs;
   };
 }

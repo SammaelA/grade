@@ -293,22 +293,15 @@ interpolation::householder_qr(const std::vector<float>& M, const size_t &size, s
 std::vector<float> 
 interpolation::calc_coefs(const std::vector<float> &b)
 {
-    std::vector<float> new_b(64, 0), coefs(64, 0);
-
-    for (int i = 0; i < 64; i++)
-    {
-        new_b[i] = b[i % 8];
-    }
+    std::vector<float> coefs(64, 0);
 
     for (int i = 0; i < 64; i++)
     {
         for (int j = 0; j < 64; j++)
         {
-            coefs[i] += (float)A_v2[i][j] * new_b[j];
+            coefs[i] += (float)B[64 * i + j] * b[j % 8];
         }
     }
-
-    new_b.clear();
 
     return coefs;
 }

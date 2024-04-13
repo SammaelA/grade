@@ -626,7 +626,7 @@ namespace upg
     bbox = AABB(bbox_center - float3(max_s), bbox_center + float3(max_s)).expand(1.1f);
     bbox = AABB({-1,-1,-1},{1,1,1});
 
-    std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64, SdfNodeType::GRID_128};
+    std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64};
     std::vector<uint16_t> grid_sizes = {16,32,64,128,256};
     std::vector<uint16_t> full_structure = {3, 2, 3, 3,2,4,2,4, 3,3,2,5,2,5,3,2,5,2,5};
     std::vector<float> full_params = {3,0,0,
@@ -659,12 +659,13 @@ namespace upg
     unsigned steps = 15;
     for (int i=0;i<steps;i++)
     {
+      std::cout << i << std::endl; 
       CameraSettings camera;
       camera.origin = float3(7*cos((2.0f*PI*i)/steps),2,7*sin((2.0f*PI*i)/steps));
       camera.target = float3(0,0,0);
       camera.up = float3(0,1,0);
-      Texture t = render_sdf(sdf, camera, 2048, 2048, 9, SDFRenderMode::LAMBERT);
-      engine::textureManager->save_png(t, "Grid SDFs demo "+std::to_string(i));
+      Texture t = render_sdf(sdf, camera, 512, 512, 9, SDFRenderMode::LAMBERT);
+      engine::textureManager->save_png(t, "new_matrix/Grid SDFs demo "+std::to_string(i));
     }
   }
 
@@ -1564,28 +1565,31 @@ auto t2 = std::chrono::steady_clock::now();
     }
     else if (name == "density_field")
     {
-      std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
-      auto model = dgen::load_obj(obj_path);
+      // grid_demonstrate_different_sizes();
       
-      std::vector<float> sdf_model = df::pipeline(model);
+      // std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
+      // auto model = dgen::load_obj(obj_path);
+      
+      // std::vector<float> sdf_model = df::pipeline(model, 32, 5);
 
-      // Save sdf for next use
-      df::save_sdf(sdf_model, "sphere.sdf");
+      // // Save sdf for next use
+      // df::save_sdf(sdf_model, 32, "sphere.sdf");
 
-      // auto sdf_model = df::readFile("sphere.sdf");
+      auto sdf_model = df::readFile("sphere.sdf");
 
       int steps = 15;
-      ProceduralSdf g_sdf({{SdfNodeType::GRID_64}});
+      ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
       g_sdf.set_parameters(sdf_model);
       
       for (int i=0;i<steps;i++)
       {
+        std::cout << i << std::endl;
         CameraSettings camera;
         camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
         camera.target = float3(0,0,0);
         camera.up = float3(0,1,0);
         Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
-        engine::textureManager->save_png(t, "reconstructed_image_grid_bicubic"+std::to_string(i));
+        engine::textureManager->save_png(t, "32reconstructed_image_grid_bicubic"+std::to_string(i));
       }
     }
     else if (name == "QR")
@@ -1598,13 +1602,6 @@ auto t2 = std::chrono::steady_clock::now();
       }
 
       std::vector<float> Q(64 * 64, 0), R(64 * 64, 0);
-
-      // interpolation::QR(M, 64, Q, R);
-
-      // std::vector<float> G = interpolation::mul_qr(Q, R, 64);
-
-      // std::cout << std::endl << "Deviation of the resulting decomposition from the original matrix: " << interpolation::matrix_norm(M, G) << std::endl << std::endl;
-
       std::vector<float> b(64, 0);
 
       for (auto &el : b)
@@ -1612,41 +1609,18 @@ auto t2 = std::chrono::steady_clock::now();
         el = -1 + 2.f * rand() / (float)RAND_MAX;
       }
 
-      // auto coefs = interpolation::calc_qr_coefs(Q, R, b);
-
-      // for (int i = 0; i < 64; i++)
-      // {
-      //   float s = 0;
-
-      //   for (int j = 0; j < 64; j++)
-      //   {
-      //     s += M[64 * i + j] * coefs[j];
-      //   }
-
-      //   std::cout << b[i] << " " << s << std::endl;
-      // }
-
       std::vector<LiteMath::float3> X;
 
       for (int i = 0; i < 64; i++)
       {
         X.push_back(LiteMath::float3(-1 + 2.f * rand() / (float)RAND_MAX, -1 + 2.f * rand() / (float)RAND_MAX, -1 + 2.f * rand() / (float)RAND_MAX));
-        // std::cout << X[i].x << " " << X[i].y << " " << X[i].z << std::endl;
       }
 
       auto A = interpolation::create_A(X);
 
       interpolation::householder_qr(A, 64, Q, R);
-      // interpolation::QR(A, 64, Q, R);
-      // auto coefs = interpolation::calc_qr_coefs(Q, R, b);
 
       std::cout << interpolation::matrix_norm(A, interpolation::mul_qr(Q, R, 64)) << std::endl;
-      // for (int i = 0; i < 64; i++)
-      // {
-      //   std::cout << A[i] << " ";
-      // }
-
-      
     }
     else
       benchmark_sdf_complex_optimization();
