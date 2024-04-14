@@ -1577,7 +1577,7 @@ auto t2 = std::chrono::steady_clock::now();
 
       auto sdf_model = df::readFile("sphere.sdf");
 
-      int steps = 15;
+      int steps = 1;
       ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
       g_sdf.set_parameters(sdf_model);
       

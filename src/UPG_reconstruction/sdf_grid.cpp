@@ -96,7 +96,24 @@ namespace upg
           }
       }
 
-      std::vector<float>power_x{1, dp.x, dp.x * dp.x, dp.x * dp.x * dp.x}, power_y{1, dp.y, dp.y * dp.y, dp.y * dp.y * dp.y}, power_z{1, dp.z, dp.z * dp.z, dp.z * dp.z * dp.z};
+      float power_x[4], power_y[4], power_z[4];
+      
+      power_x[0] = 1;
+      power_x[1] = dp.x;
+      power_x[2] = dp.x * dp.x;
+      power_x[3] = dp.x * dp.x * dp.x;
+
+      power_y[0] = 1;
+      power_y[1] = dp.y;
+      power_y[2] = dp.y * dp.y;
+      power_y[3] = dp.y * dp.y * dp.y;
+
+      power_z[0] = 1;
+      power_z[1] = dp.z;
+      power_z[2] = dp.z * dp.z;
+      power_z[3] = dp.z * dp.z * dp.z;
+
+      // std::vector<float>power_x{1, dp.x, dp.x * dp.x, dp.x * dp.x * dp.x}, power_y{1, dp.y, dp.y * dp.y, dp.y * dp.y * dp.y}, power_z{1, dp.z, dp.z * dp.z, dp.z * dp.z * dp.z};
 
       for (int i = 0; i < 4; i++)
       {
