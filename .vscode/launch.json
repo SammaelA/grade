@@ -8,6 +8,27 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch LiteRT",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/modules/LiteRT/render_app",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/modules/LiteRT",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build project",
+      "miDebuggerPath": "/usr/bin/gdb"
+    },
+    {
       "name": "Launch UPG Tests",
       "type": "cppdbg",
       "request": "launch",
@@ -27,7 +48,7 @@
       ],
       "preLaunchTask": "build project",
       "miDebuggerPath": "/usr/bin/gdb"
-    }
+    },
     {
       "name": "Launch UPG Benchmark",
       "type": "cppdbg",
@@ -48,7 +69,7 @@
       ],
       "preLaunchTask": "build project",
       "miDebuggerPath": "/usr/bin/gdb"
-    }
+    },
     {
       "name": "Launch Test Cmd Pack",
       "type": "cppdbg",
@@ -69,7 +90,7 @@
       ],
       "preLaunchTask": "build project",
       "miDebuggerPath": "/usr/bin/gdb"
-    }
+    },
     {
       "name": "Launch Sandbox",
       "type": "cppdbg",
@@ -90,7 +111,7 @@
       ],
       "preLaunchTask": "build project",
       "miDebuggerPath": "/usr/bin/gdb"
-    }
+    },
     {
       "name": "Launch NeuralCore",
       "type": "cppdbg",
@@ -110,7 +131,7 @@
         }
       ],
       "miDebuggerPath": "/usr/bin/gdb"
-    }
+    },
     {
       "name": "Launch Sandbox -opt",
       "type": "cppdbg",
