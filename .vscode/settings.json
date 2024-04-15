@@ -107,7 +107,8 @@
       "__hash_table": "cpp",
       "__tree": "cpp",
       "orderingmethods": "cpp",
-      "__locale": "cpp"
+      "__locale": "cpp",
+      "cfloat": "cpp"
     },
     "editor.detectIndentation": false,
     "editor.tabSize": 2
