@@ -143,9 +143,9 @@ void render_mygen_cup_demo(MitsubaInterface &mi, CameraSettings &camera, std::ve
   }
                       
   render_normalized(mi, res, "../../"+texture_path,
-                    save_dir+"demo_textured", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO, 0.8, false);
-  render_normalized(mi, res, "../../"+texture_path,
-                    save_dir+"demo_monochrome", 1024, 1024, 99, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
+                    save_dir+"demo_textured", 1024, 1024, 8, 3, 0, camera, nullptr, nullptr, MitsubaInterface::TEXTURED_DEMO, 0.0, false);
+  //render_normalized(mi, res, "../../"+texture_path,
+  //                  save_dir+"demo_monochrome", 1024, 1024, 9, 3, 0, camera, nullptr, nullptr, MitsubaInterface::MONOCHROME_DEMO, 0.8, false);
 }
 
 void render_mygen_cup_not_diff(MitsubaInterface &mi, CameraSettings &camera, std::vector<float> params,

@@ -1,4 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
 #include "cubemap.h"
 #include "engine.h"
 #include "image.h"

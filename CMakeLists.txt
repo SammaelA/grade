@@ -39,6 +39,7 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(LiteMath)
+add_compile_definitions(USE_STB_IMAGE)
 
 #common compiler settings
 set(CMAKE_CXX_STANDARD 17)

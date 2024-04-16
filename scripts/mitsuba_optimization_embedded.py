@@ -357,8 +357,6 @@ def prepare_model(params, context):
   for i in range(context['model_parts']):
     params['model_'+str(i)+'.vertex_positions'] = context['vertex_positions_'+str(i)]
     vertex_count = int(len(params['model_'+str(i)+'.vertex_positions'])/3)
-    params['model_'+str(i)+'.vertex_count'] = vertex_count
-    params['model_'+str(i)+'.face_count'] = int(vertex_count/3)
     if (len(params['model_'+str(i)+'.faces']) != vertex_count):
       params['model_'+str(i)+'.faces'] = list(range(vertex_count))
 

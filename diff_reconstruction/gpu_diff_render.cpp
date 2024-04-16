@@ -13,10 +13,10 @@ struct EdgeGPU
 
 DiffRenderGPU::DiffRenderGPU():
 render_silhouette({"render_silhouette.vs", "render_silhouette.fs"}, {"in_Position", "in_Normal", "in_Tex"}),
-diff_loss("diff_loss.fs"),
 diff_loss_sum({"diff_loss_sum.comp"},{}),
 edges_get_pdf({"edges_get_pdf.comp"},{}),
-edge_sampling({"edge_sampling.comp"},{})
+edge_sampling({"edge_sampling.comp"},{}),
+diff_loss("diff_loss.fs")
 {
   fbo = create_framebuffer();
 

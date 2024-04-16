@@ -2,7 +2,6 @@
 #include "image.h"
 #include "shader.h"
 #include "model.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
 #include "common_utils/blk.h"
 #include <exception>
