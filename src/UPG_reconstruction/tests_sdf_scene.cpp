@@ -4,6 +4,7 @@
 #include "sdf_octree.h"
 #include "common_sdf_scenes.h"
 #include "sdf_grid.h"
+#include "sdf_bboxes.h"
 #include <functional>
 
 namespace upg
@@ -150,12 +151,60 @@ namespace upg
       debug("FAILED diff = %f\n", diff);
   }
 
+  void scene_test_4()
+  {
+    auto scene = scene_chair();
+    ProceduralSdf reference_sdf(scene.first);
+    reference_sdf.set_parameters(scene.second.p);
+    AABB bbox = AABB({-1,-1,-1},{1,1,1});
+    //reference_sdf.get_distance(float3(0,0,0));
+
+    std::vector<AABB> bbox_list = get_bbox_list([&reference_sdf](const float3 &pos) { return reference_sdf.get_distance(pos); },
+                                                bbox, 0, 3);
+    
+    unsigned tries = 50000;
+    unsigned errors = 0;
+    for (int i=0;i<tries;i++)
+    {
+      float3 p = bbox.min_pos + bbox.size()*float3(urand(), urand(), urand());
+      float d_ref = reference_sdf.get_distance(p);
+      if (d_ref > 0)
+        continue;
+      int box_id = -1;
+      for (int j=0;j<bbox_list.size();j++)
+      {
+        if (bbox_list[j].contains(p))
+        {
+          if (box_id == -1)
+            box_id = j;
+          else
+          {
+            errors++;
+            logerr("boxes %d and %d both contain (%f %f %f)", box_id, j, p.x, p.y, p.z);
+          }
+        }
+      }
+      if (box_id == -1)
+      {
+        errors++;
+        logerr("(%f %f %f) does not belog to any box", p.x, p.y, p.z);
+      }
+    }
+
+    debug("TEST 4. SDF BBOX LIST\n");
+    debug("  4.1. %-64s", "Bbox list is correct ");
+    if (errors == 0)
+      debug("passed\n");
+    else
+      debug("FAILED n_errors = %d\n", errors);
+  }
+
   void perform_tests_sdf_scene(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
 
     std::vector<std::function<void(void)>> test_functions = {
-      scene_test_1, scene_test_2, scene_test_3
+      scene_test_1, scene_test_2, scene_test_3, scene_test_4
     };
 
     if (tests.empty())
