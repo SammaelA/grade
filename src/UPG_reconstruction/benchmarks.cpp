@@ -24,6 +24,7 @@
 #include "LiteRT/Renderer/eye_ray.h"
 #include "LiteRT/utils/mesh_bvh.h"
 #include "LiteRT/utils/mesh.h"
+#include "equation_solvers.h"
 
 namespace upg
 {
@@ -1119,6 +1120,17 @@ auto t2 = std::chrono::steady_clock::now();
       interpolation::householder_qr(A, 64, Q, R);
 
       std::cout << interpolation::matrix_norm(A, interpolation::mul_qr(Q, R, 64)) << std::endl;
+    }
+    else if (name == "equation_solver")
+    {
+      std::vector<float> pol(9, 0);
+
+      for (auto &el : pol)
+      {
+        el = 10 * rand() / (float)RAND_MAX;
+      }
+
+      
     }
     else
       benchmark_sdf_complex_optimization();
