@@ -113,8 +113,6 @@ namespace upg
       power_z[2] = dp.z * dp.z;
       power_z[3] = dp.z * dp.z * dp.z;
 
-      // std::vector<float>power_x{1, dp.x, dp.x * dp.x, dp.x * dp.x * dp.x}, power_y{1, dp.y, dp.y * dp.y, dp.y * dp.y * dp.y}, power_z{1, dp.z, dp.z * dp.z, dp.z * dp.z * dp.z};
-
       for (int i = 0; i < 4; i++)
       {
           for (int j = 0; j < 4; j++)
