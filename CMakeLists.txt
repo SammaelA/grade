@@ -227,6 +227,7 @@ set(SCENE_LOADER_SRC
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/mesh_bvh.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/mesh.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/sparse_octree.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/radiance_field.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/tests.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/benchmark.cpp
     )
