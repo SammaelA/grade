@@ -259,7 +259,7 @@ endif()
 
 set(MODULES_SRC ${MODULES_SRC} ${SCENE_LOADER_SRC} ${CORE_SRC} ${BUILDERS_SRC} ${VULKAN_SRC})
 
-set(MODULES_LIBRARIES ${MODULES_LIBRARIES} embree3 embree_sse42 embree_avx embree_avx2 lexers simd sys tasking)
+set(MODULES_LIBRARIES ${MODULES_LIBRARIES} embree4 tbb tbbmalloc)
 #else()
 #endif()
 
