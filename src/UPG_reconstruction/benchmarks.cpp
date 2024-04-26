@@ -1128,18 +1128,28 @@ auto t2 = std::chrono::steady_clock::now();
       std::vector<float> coefs;
       srand(time(NULL));
 
-      for (int i = 0; i < power + 1; i++)
+      for (int i = 0; i < 64; i++)
       {
-        coefs.push_back(10 * rand() / (float)RAND_MAX);
-        // std::cout << coefs[i] << " ";
+        coefs.push_back(rand() / (float)RAND_MAX);
       }
 
-      std::cout << std::endl;
+      // float intervals[2] = {0};
+      // solver::find_interval(coefs, -10, 10, power, intervals);
+
+      // std::cout << intervals[0] << " " << intervals[1] << std::endl;
+
+      LiteMath::float3 P = {0.1, 0.3, 0.3}, D = {0.1, 0.1, 0.1};
+      float new_coefs[10] = {0};
+
+      solver::coefsDecrease(coefs, P, D, new_coefs);
+
+      std::vector<float> M(std::begin(new_coefs), std::end(new_coefs));
 
       float intervals[2] = {0};
-      solver::find_interval(coefs, -10, 10, power, intervals);
+      solver::find_interval(M, 0, 2, power, intervals);
 
       std::cout << intervals[0] << " " << intervals[1] << std::endl;
+
     }
     else
       benchmark_sdf_complex_optimization();
