@@ -1124,6 +1124,7 @@ auto t2 = std::chrono::steady_clock::now();
     }
     else if (name == "equation_solver")
     {
+      //! TEST equation_solver_test.blk
       int power = 9;
       std::vector<float> coefs;
       srand(time(NULL));
@@ -1158,7 +1159,7 @@ auto t2 = std::chrono::steady_clock::now();
         float f1 = solver::f(new_coefs, t, 9), f2 = solver::calc_test_res(coefs, P, D, t);
         float bias = std::abs(f1 - f2);
 
-        std::cout << "t = " << t << ", F_coefs(9) = " << f1 << ", F_coefs(64) = " << f2 << ", bias = " << bias << std::endl;
+        std::cout << "t = " << t << ", F_coefs(10) = " << f1 << ", F_coefs(64) = " << f2 << ", bias = " << bias << std::endl;
       }
 
       float intervals[2] = {0};
