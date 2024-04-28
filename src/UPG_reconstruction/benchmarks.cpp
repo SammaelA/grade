@@ -1138,17 +1138,33 @@ auto t2 = std::chrono::steady_clock::now();
 
       // std::cout << intervals[0] << " " << intervals[1] << std::endl;
 
-      LiteMath::float3 P = {0.1, 0.3, 0.3}, D = {0.1, 0.1, 0.1};
+      LiteMath::float3 P = {0, 0, 0}, D = {-0.1, 0.1, 0.1};
       float new_coefs[10] = {0};
 
       solver::coefsDecrease(coefs, P, D, new_coefs);
 
-      std::vector<float> M(std::begin(new_coefs), std::end(new_coefs));
+      std::cout << "new coefs: ";
+
+      for (auto e : new_coefs)
+      {
+        std::cout << e << " ";
+      }
+
+      std::cout << std::endl;
+
+      for (int i = 0; i < 10; i++)
+      {
+        float t = 5 + (10 - 5) * rand() / (float)RAND_MAX;
+        float f1 = solver::f(new_coefs, t, 9), f2 = solver::calc_test_res(coefs, P, D, t);
+        float bias = std::abs(f1 - f2);
+
+        std::cout << "t = " << t << ", F_coefs(9) = " << f1 << ", F_coefs(64) = " << f2 << ", bias = " << bias << std::endl;
+      }
 
       float intervals[2] = {0};
-      solver::find_interval(M, 0, 2, power, intervals);
+      solver::find_interval(new_coefs, 0, 2, power, intervals);
 
-      std::cout << intervals[0] << " " << intervals[1] << std::endl;
+      std::cout << "interval: " << intervals[0] << " " << intervals[1] << std::endl;
 
     }
     else
