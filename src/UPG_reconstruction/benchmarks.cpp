@@ -1166,7 +1166,7 @@ auto t2 = std::chrono::steady_clock::now();
 
       std::cout << std::endl << "TEST OF FINDING MINIMAL ROOT" << std::endl << std::endl;
 
-      // Example where minimal root is 0.1
+      // Example where minimal root is 0.04
       float coefs10[10] = {343.0/24414062500, -147.0/97656250, 255087.0/3906250000, -1148657.0/781250000, 2857449.0/156250000, -766599.0/6250000, 5957.0/15625, -279.0/1250, -21.0/25, 1};
       std::cout << "coefs: ";
       for (auto el : coefs10)
