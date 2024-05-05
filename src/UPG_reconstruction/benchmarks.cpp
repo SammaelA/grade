@@ -628,7 +628,7 @@ namespace upg
     bbox = AABB(bbox_center - float3(max_s), bbox_center + float3(max_s)).expand(1.1f);
     bbox = AABB({-1,-1,-1},{1,1,1});
 
-    std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64};
+    std::vector<uint16_t> grid_types = {SdfNodeType::GRID_16, SdfNodeType::GRID_32, SdfNodeType::GRID_64, SdfNodeType::GRID_128};
     std::vector<uint16_t> grid_sizes = {16,32,64,128,256};
     std::vector<uint16_t> full_structure = {3, 2, 3, 3,2,4,2,4, 3,3,2,5,2,5,3,2,5,2,5};
     std::vector<float> full_params = {3,0,0,
@@ -667,7 +667,7 @@ namespace upg
       camera.target = float3(0,0,0);
       camera.up = float3(0,1,0);
       Texture t = render_sdf(sdf, camera, 512, 512, 9, SDFRenderMode::LAMBERT);
-      engine::textureManager->save_png(t, "new_matrix/Grid SDFs demo "+std::to_string(i));
+      engine::textureManager->save_png(t, "tricubic_chairs_"+std::to_string(i));
     }
   }
 
@@ -1065,32 +1065,32 @@ auto t2 = std::chrono::steady_clock::now();
     }
     else if (name == "density_field")
     {
-      // grid_demonstrate_different_sizes();
+      grid_demonstrate_different_sizes();
       
       // std::string obj_path = "./resources/mitsuba_data/meshes/sphere.obj";
       // auto model = dgen::load_obj(obj_path);
       
-      // std::vector<float> sdf_model = df::pipeline(model, 32, 5);
+      // std::vector<float> sdf_model = df::pipeline(model, 64, 5);
 
       // // Save sdf for next use
-      // df::save_sdf(sdf_model, 32, "sphere.sdf");
+      // df::save_sdf(sdf_model, 64, "64sphere.sdf");
 
-      auto sdf_model = df::readFile("sphere.sdf");
+      // auto sdf_model = df::readFile("slab.sdf");
 
-      int steps = 1;
-      ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
-      g_sdf.set_parameters(sdf_model);
+      // int steps = 1;
+      // ProceduralSdf g_sdf({{SdfNodeType::GRID_32}});
+      // g_sdf.set_parameters(sdf_model);
       
-      for (int i=0;i<steps;i++)
-      {
-        std::cout << i << std::endl;
-        CameraSettings camera;
-        camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
-        camera.target = float3(0,0,0);
-        camera.up = float3(0,1,0);
-        Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
-        engine::textureManager->save_png(t, "32reconstructed_image_grid_bicubic"+std::to_string(i));
-      }
+      // for (int i=0;i<steps;i++)
+      // {
+      //   std::cout << i << std::endl;
+      //   CameraSettings camera;
+      //   camera.origin = float3(3*cos((2.0f*PI*i)/steps),0,3*sin((2.0f*PI*i)/steps));
+      //   camera.target = float3(0,0,0);
+      //   camera.up = float3(0,1,0);
+      //   Texture t = render_sdf(g_sdf, camera, 512, 512, 4, SDFRenderMode::LAMBERT);
+      //   engine::textureManager->save_png(t, "slab"+std::to_string(i));
+      // }
     }
     else if (name == "QR")
     {
@@ -1129,6 +1129,8 @@ auto t2 = std::chrono::steady_clock::now();
       std::vector<float> coefs;
       srand(time(NULL));
 
+      std::cout << std::endl << "TEST OF CONVERTING 64 COEFS TO 10" << std::endl << std::endl;
+
       for (int i = 0; i < 64; i++)
       {
         coefs.push_back(rand() / (float)RAND_MAX);
@@ -1139,7 +1141,7 @@ auto t2 = std::chrono::steady_clock::now();
 
       // std::cout << intervals[0] << " " << intervals[1] << std::endl;
 
-      LiteMath::float3 P = {0, 0, 0}, D = {-0.1, 0.1, 0.1};
+      LiteMath::float3 P = {-5, -1, -4}, D = {-0.1, 0.1, 0.1};
       float new_coefs[10] = {0};
 
       solver::coefsDecrease(coefs, P, D, new_coefs);
@@ -1162,11 +1164,28 @@ auto t2 = std::chrono::steady_clock::now();
         std::cout << "t = " << t << ", F_coefs(10) = " << f1 << ", F_coefs(64) = " << f2 << ", bias = " << bias << std::endl;
       }
 
-      float intervals[2] = {0};
-      solver::find_interval(new_coefs, 0, 2, power, intervals);
+      std::cout << std::endl << "TEST OF FINDING MINIMAL ROOT" << std::endl << std::endl;
 
-      std::cout << "interval: " << intervals[0] << " " << intervals[1] << std::endl;
+      // Example where minimal root is 0.1
+      float coefs10[10] = {343.0/24414062500, -147.0/97656250, 255087.0/3906250000, -1148657.0/781250000, 2857449.0/156250000, -766599.0/6250000, 5957.0/15625, -279.0/1250, -21.0/25, 1};
+      std::cout << "coefs: ";
+      for (auto el : coefs10)
+      {
+        std::cout << el << " ";
+      }
 
+      std::cout << std::endl;
+
+      float interval[2] = {0};
+      solver::find_interval(coefs10, 0, 2, power, interval);
+
+      std::cout << "interval: " << interval[0] << " " << interval[1] << std::endl << std::endl;
+      std::cout << "DIFFERENT SOLVERS:" << std::endl;
+      std::cout << "Newton-Raphson Save Method root: " << solver::nr_solver(coefs10, interval[0], interval[1], 0.001) << std::endl;
+      std::cout << "Halley's Method root: " << solver::halley_solver(coefs10, interval[0], interval[1], 0.001) << std::endl;
+      std::cout << "Bisection Method root: " << solver::bisection_solver(coefs10, interval[0], interval[1], 0.001) << std::endl;
+      std::cout << "Brent's Method root: " << solver::brent_solver(coefs10, interval[0], interval[1], 0.001) << std::endl;
+      std::cout << std::endl;
     }
     else
       benchmark_sdf_complex_optimization();
