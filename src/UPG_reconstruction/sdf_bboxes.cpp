@@ -1,5 +1,6 @@
 #include "sdf_bboxes.h"
-
+namespace upg
+{
   /*
     the argument 'cuts_quant' in the 'get_bbox_list' (see below) function shows
     how many time we want to cut each bbox in half along some axis

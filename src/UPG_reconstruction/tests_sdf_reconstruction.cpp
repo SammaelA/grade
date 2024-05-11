@@ -1028,7 +1028,7 @@ namespace upg
     }
     optimization {
         start {
-            params:arr = {1.1, 0.02, 0.67, 0.02, -0.27, 0.1, 0.2, 0.13, 0.33, 0.17, 0.31, 0.68}    
+            params:arr = {1.8, 0.02, 0.67, 0.02, -0.5, 0.4, 0.2, 0.65, 0.73, 0.17, 0.31, 0.38}    
             structure:arr = {14, 13} 
         }
         step_0 {
@@ -1502,7 +1502,7 @@ namespace upg
     std::vector<std::function<void(void)>> test_functions = {
       sdf_test_1,  sdf_test_2,  sdf_test_3,  sdf_test_4,  sdf_test_5,
       sdf_test_6,  sdf_test_7,  sdf_test_8,  sdf_test_9,  sdf_test_10,
-      sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_15, sdf_test_15,
+      sdf_test_11, sdf_test_12, sdf_test_13, sdf_test_14, sdf_test_15,
       sdf_test_16, sdf_test_17, sdf_test_18, sdf_test_19, sdf_test_20,
       sdf_test_21, sdf_test_22, sdf_test_23, sdf_test_24
     };
