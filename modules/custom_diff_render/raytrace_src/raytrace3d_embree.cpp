@@ -26,7 +26,7 @@ struct EmbreeRT3D : public IRayTracer
   {
     m_pScene = pScene;
     if(m_pAccelStruct == nullptr)
-      m_pAccelStruct = ::std::shared_ptr<ISceneObject>(CreateSceneRT(""));
+      m_pAccelStruct = ::std::shared_ptr<ISceneObject>(CreateScene_RT(""));
     m_pAccelStruct->ClearGeom();
     m_pAccelStruct->ClearScene();
 

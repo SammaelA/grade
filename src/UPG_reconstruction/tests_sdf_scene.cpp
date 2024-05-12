@@ -67,7 +67,7 @@ namespace upg
     ProceduralSdf sdf({{SdfNodeType::GRID_256}});
     sdf.set_parameters(grid_data);
 
-    auto grid_sdf = get_SdfGridFunction({uint3(grid_size,grid_size,grid_size), grid_data.data()});
+    auto grid_sdf = get_SdfGridFunction(SdfGridView(uint3(grid_size,grid_size,grid_size), grid_data));
 
     unsigned tries = 50000;
     unsigned errors = 0;

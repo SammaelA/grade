@@ -853,7 +853,7 @@ auto t2 = std::chrono::steady_clock::now();
     float timings[4] = {0,0,0,0};
 
     auto pRender = CreateMultiRenderer("GPU");
-    pRender->SetScene({uint3(grid_size, grid_size, grid_size), grid_data.data()});
+    pRender->SetScene(SdfGridView(uint3(grid_size, grid_size, grid_size), grid_data));
 
 auto t1 = std::chrono::steady_clock::now();
     pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false));
@@ -944,7 +944,12 @@ auto t2 = std::chrono::steady_clock::now();
     ProceduralSdf sdf(s.first);
     sdf.set_parameters(s.second.p);
     SparseOctreeBuilder builder;
-    SparseOctreeSettings settings{8, 4, 0.0001f};
+    SparseOctreeSettings settings;
+    settings.build_type = SparseOctreeBuildType::DEFAULT;
+    settings.depth = 8;
+    settings.min_remove_level = 4;
+    settings.remove_thr = 0.0001f;
+
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
     builder.construct_bottom_up_frame([&sdf](const float3 &p) { return sdf.get_distance(p); }, 
@@ -998,7 +1003,11 @@ auto t2 = std::chrono::steady_clock::now();
     mesh_bvh.init(mesh);
 
     SparseOctreeBuilder builder;
-    SparseOctreeSettings settings{9, 4, 0.0f};
+    SparseOctreeSettings settings;
+    settings.build_type = SparseOctreeBuildType::DEFAULT;
+    settings.depth = 9;
+    settings.min_remove_level = 4;
+    settings.remove_thr = 0.0f;
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
     {

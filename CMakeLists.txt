@@ -228,8 +228,11 @@ set(SCENE_LOADER_SRC
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/mesh.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/sparse_octree.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/radiance_field.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/gaussian_field.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/hp_octree.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/tests.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/benchmark.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/NeuralRT/NeuralRT.cpp
     )
 
 set(CORE_SRC
@@ -254,7 +257,10 @@ if (MODULE_VULKAN)
 set(VULKAN_SRC 
 ${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu.cpp 
 ${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu_ds.cpp 
-${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu_init.cpp)
+${CMAKE_SOURCE_DIR}/modules/LiteRT/Renderer/eye_ray_gpu_init.cpp
+${CMAKE_SOURCE_DIR}/modules/LiteRT/NeuralRT/NeuralRT_gpu.cpp
+${CMAKE_SOURCE_DIR}/modules/LiteRT/NeuralRT/NeuralRT_gpu_ds.cpp
+${CMAKE_SOURCE_DIR}/modules/LiteRT/NeuralRT/NeuralRT_gpu_init.cpp)
 endif()
 
 set(MODULES_SRC ${MODULES_SRC} ${SCENE_LOADER_SRC} ${CORE_SRC} ${BUILDERS_SRC} ${VULKAN_SRC})

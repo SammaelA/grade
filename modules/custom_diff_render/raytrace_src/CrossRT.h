@@ -111,5 +111,5 @@ struct ISceneObject
 ISceneObject* CreateEmbreeRT();
 //ISceneObject* CreateVulkanRTX(VkDevice a_device, VkPhysicalDevice a_physDevice, uint32_t a_transferQId, uint32_t a_graphicsQId);
 
-ISceneObject* CreateSceneRT(const char* a_impleName); 
-void          DeleteSceneRT(ISceneObject* a_pScene);
+ISceneObject* CreateScene_RT(const char* a_impleName); 
+void          DeleteScene_RT(ISceneObject* a_pScene);

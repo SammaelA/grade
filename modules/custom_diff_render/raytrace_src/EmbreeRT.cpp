@@ -351,5 +351,5 @@ bool EmbreeRT::RayQuery_AnyHit(LiteMath::float4 posAndNear, LiteMath::float4 dir
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ISceneObject* CreateEmbreeRT() { return new EmbreeRT; }
-ISceneObject* CreateSceneRT(const char* a_impleName)  {  return CreateEmbreeRT(); }
-void DeleteSceneRT(ISceneObject* a_pScene)  { delete a_pScene; }
+ISceneObject* CreateScene_RT(const char* a_impleName)  {  return CreateEmbreeRT(); }
+void DeleteScene_RT(ISceneObject* a_pScene)  { delete a_pScene; }
