@@ -7,6 +7,13 @@
 #include "sdf_bboxes.h"
 #include <functional>
 
+
+
+#include "watertight_mesh.h"
+#include "LiteScene/cmesh4.h"
+
+
+
 namespace upg
 {
 
@@ -199,12 +206,323 @@ namespace upg
       debug("FAILED n_errors = %d\n", errors);
   }
 
+
+// -------------------------- watertight -----------------------------
+
+  // Checking the teapot for watertight
+  void scene_test_5(){
+    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/teapot.vsgf");
+    
+    bool res = watertight_mesh(mesh);
+    if(res == 1)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 1 the cube for watertight
+  void scene_test_6(){
+    cmesh4::SimpleMesh mesh;
+
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 1)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 2 the cube for watertight:
+  // Instead of triangle (0, 4, 7), consider triangle (0, 7, 8) triangle (8, 4, 7)
+  void scene_test_7(){
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+    mesh_vertices.push_back(float4(0.5, 0, 0, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 7, 8, 8, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 1)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 3 the cube for watertight: Add 3 equal triangles
+  void scene_test_8(){
+    cmesh4::SimpleMesh mesh;
+
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0,
+      2, 4, 7
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 1)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 4 the cube for watertight: Triangle in a triangle
+  void scene_test_9(){
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+
+    mesh_vertices.push_back(float4(1, 0.7, 0.7, 8));
+    mesh_vertices.push_back(float4(1, 0.3, 0.3, 8));
+    mesh_vertices.push_back(float4(1, 0.3, 0.7, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0,
+      8, 9, 10
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 1)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 5 the cube for watertight
+  // Two equal elements in mesh_vertices that are pointed to by
+  // different mesh_indices indexes
+  void scene_test_10(){
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 8, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 1)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+
+
+  // -------------------------- non- watertight -----------------------------
+
+
+  // Checking 1 the cube for non-watertight: Indexes are not multiples of three
+  void scene_test_11(){
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 0)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 2 the cube for non-watertight:
+  // Two equal vertices in the same triangle
+  void scene_test_12(){
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 6, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 0)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 3 the cube for non-watertight: There are edge(s) that occur only once
+  void scene_test_13(){
+    cmesh4::SimpleMesh mesh;
+
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 2, 2, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 8, 0,
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 0)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
+  // Checking 4 the cube for non-watertight:
+  // There are edge(s) that occur more than twice
+  void scene_test_14(){
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+    mesh_vertices.push_back(float4(2, 0, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      0, 4, 7, 1, 0, 7, 6, 2, 5, 3, 6, 2, 1, 6, 0, 3, 1, 6,
+      4, 2, 5, 4, 2, 7, 3, 7, 1, 7, 3, 2, 5, 4, 0, 6, 5, 0,
+      0, 4, 8, 0, 8, 4
+    };
+
+    mesh.indices = mesh_indices;
+
+    bool res = watertight_mesh(mesh);
+    if(res == 0)
+      debug("passed\n");
+    else
+      debug("error\n");
+  }
+
   void perform_tests_sdf_scene(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
 
     std::vector<std::function<void(void)>> test_functions = {
-      scene_test_1, scene_test_2, scene_test_3, scene_test_4
+      scene_test_1, scene_test_2, scene_test_3, scene_test_4,
+
+      scene_test_5, scene_test_6, scene_test_7, scene_test_8, scene_test_9,
+      scene_test_10, scene_test_11, scene_test_12, scene_test_13, scene_test_14
     };
 
     if (tests.empty())
