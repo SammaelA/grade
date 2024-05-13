@@ -8,8 +8,8 @@
 
 
 namespace upg{
-  int find_edge_in_planes(std::vector<LiteMath::float4> mesh_vertices,
-                           std::vector<unsigned int> mesh_indices,
+  int find_edge_in_planes(const std::vector<LiteMath::float4> &mesh_vertices,
+                          const std::vector<unsigned int> &mesh_indices,
                            std::map<std::pair<unsigned int, unsigned int>,
                                     std::vector<unsigned int>>& edge_in_planes,
                            unsigned int ind,
@@ -32,9 +32,117 @@ namespace upg{
 
   LiteMath::float3 float4_to_float3(LiteMath::float4 m);
 
+  using LiteMath::uint2;
+  using LiteMath::uint3;
 
+  struct cmpUint2 {
+    bool operator()(const uint2& a, const uint2& b) const 
+    {
+      if (a.x < b.x)
+        return true;
+      else if (a.x > b.x)
+        return false;
+      return a.y < b.y;
+      
+    }
+};
+
+struct cmpUint3 {
+    bool operator()(const uint3& a, const uint3& b) const 
+    {
+      if (a.x < b.x)
+        return true;
+      else if (a.x > b.x)
+        return false;
+      if (a.y < b.y)
+        return true;
+      else if (a.y > b.y)
+        return false;
+      return a.z < b.z;
+      
+    }
+};
+
+  bool fast_watertight(cmesh4::SimpleMesh& mesh)
+  {
+    std::vector<LiteMath::float4> mesh_vertices = mesh.vPos4f;
+    std::vector<unsigned int> mesh_indices = mesh.indices;
+
+    if (mesh_vertices.size() == 0 || mesh_indices.size() == 0 || mesh_indices.size()%3 != 0)
+      return false;
+
+    std::map<uint3, unsigned, cmpUint3> vert_indices;
+    float eps = 1e-5;
+    float inv_eps = 1/eps;
+    std::vector<unsigned> vert_remap;
+    vert_remap.resize(mesh_vertices.size());
+
+    for (int i=0;i<mesh_vertices.size();i++)
+    {
+      uint3 v_idx = uint3(inv_eps*LiteMath::to_float3(mesh_vertices[i]) + LiteMath::float3(0.5, 0.5, 0.5));
+      auto it = vert_indices.find(v_idx);
+      if (it == vert_indices.end())
+      {
+        vert_indices[v_idx] = i;
+        vert_remap[i] = i;
+      }
+      else
+        vert_remap[i] = it->second;
+    }
+
+    std::map<uint2, std::vector<unsigned int>, cmpUint2> edge_in_planes;
+
+    //printf("indices %d\n", (int)(mesh_indices.size()/3));
+    for (int i=0;i<mesh_indices.size();i+=3)
+    {
+      unsigned i1 = vert_remap[mesh_indices[i]];
+      unsigned i2 = vert_remap[mesh_indices[i+1]];
+      unsigned i3 = vert_remap[mesh_indices[i+2]];
+
+      unsigned a = std::min(i1, std::min(i2, i3));
+      unsigned c = std::max(i1, std::max(i2, i3));
+      unsigned b = i1;
+
+      if (b == a || b == c) b = i2;
+      if (b == a || b == c) b = i3;
+
+      auto it = edge_in_planes.find({a, b});
+      if (it == edge_in_planes.end())
+        edge_in_planes[uint2(a,b)] = {};
+      edge_in_planes[{a, b}].push_back(i);
+      
+      it = edge_in_planes.find({b, c});
+      if (it == edge_in_planes.end())
+        edge_in_planes[uint2(b,c)] = {};
+      edge_in_planes[{b, c}].push_back(i);
+      
+      it = edge_in_planes.find({a, c});
+      if (it == edge_in_planes.end())
+        edge_in_planes[uint2(a,c)] = {};
+      edge_in_planes[{a, c}].push_back(i);
+    }
+
+    int i=0;
+    bool watertight = true;
+    for (auto it = edge_in_planes.begin(); it != edge_in_planes.end(); it++)
+    {
+      //printf("edge_in_planes size %d\n",(int)edge_in_planes.size());
+      //auto p = edge_in_planes.begin() + i;
+      if (it->second.size() < 2)
+      {
+        printf("%d edge (%u %u), %d triangles\n", i, it->first.x, it->first.y, (int)it->second.size());
+        watertight = false;
+      }
+      i++;
+    }
+
+    //for (int i=0;i<10;i++)
+    //printf("%f %f %f\n", mesh_vertices[mesh_indices[i]].x, mesh_vertices[mesh_indices[i]].y, mesh_vertices[mesh_indices[i]].z);
+    return watertight;
+  }
 
   bool watertight_mesh(cmesh4::SimpleMesh& mesh){
+    return fast_watertight(mesh);
     std::vector<LiteMath::float4> mesh_vertices = mesh.vPos4f;
     std::vector<unsigned int> mesh_indices = mesh.indices;
 
@@ -200,8 +308,8 @@ namespace upg{
   }
 
 
-  int find_edge_in_planes(std::vector<LiteMath::float4> mesh_vertices,
-                           std::vector<unsigned int> mesh_indices,
+  int find_edge_in_planes(const std::vector<LiteMath::float4> &mesh_vertices,
+                          const std::vector<unsigned int> &mesh_indices,
                            std::map<std::pair<unsigned int, unsigned int>,
                                     std::vector<unsigned int>>& edge_in_planes,
                            unsigned int ind,
@@ -261,6 +369,7 @@ namespace upg{
         }
 
         // else if((inside_triangle(p1, m0, m1, m2) && inside_triangle(p2, m0, m1, m2)) ||
+        /*
         else if(
           (inside_line(p1, m0, m1) && inside_line(p2, m0, m1)) ||
           (inside_line(p1, m0, m2) && inside_line(p2, m0, m2)) ||
@@ -298,6 +407,7 @@ namespace upg{
           edge_in_planes[edge] = planes;
           planes.clear();
         }
+        */
         else if(ind != -1){
           // It doesn't work properly, so "continue"
           continue;

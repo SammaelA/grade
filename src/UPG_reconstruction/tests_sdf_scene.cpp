@@ -211,7 +211,8 @@ namespace upg
 
   // Checking the teapot for watertight
   void scene_test_5(){
-    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/teapot.vsgf");
+    debug("TEST 5. TEAPOT WATERTIGHT CHECK\n");
+    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/bunny.vsgf");
     
     bool res = watertight_mesh(mesh);
     if(res == 1)
@@ -222,6 +223,7 @@ namespace upg
 
   // Checking 1 the cube for watertight
   void scene_test_6(){
+    debug("TEST 6. CUBE WATERTIGHT CHECK\n");
     cmesh4::SimpleMesh mesh;
 
     std::vector<LiteMath::float4> mesh_vertices;
@@ -254,6 +256,7 @@ namespace upg
   // Checking 2 the cube for watertight:
   // Instead of triangle (0, 4, 7), consider triangle (0, 7, 8) triangle (8, 4, 7)
   void scene_test_7(){
+    debug("TEST 7. CUBE WATERTIGHT CHECK - TWO AND ONE EDGES\n");
     cmesh4::SimpleMesh mesh;
     std::vector<LiteMath::float4> mesh_vertices;
 
@@ -285,6 +288,7 @@ namespace upg
 
   // Checking 3 the cube for watertight: Add 3 equal triangles
   void scene_test_8(){
+    debug("TEST 8. CUBE WATERTIGHT CHECK - REDUNDANT VERICES\n");
     cmesh4::SimpleMesh mesh;
 
     std::vector<LiteMath::float4> mesh_vertices;
@@ -317,6 +321,7 @@ namespace upg
 
   // Checking 4 the cube for watertight: Triangle in a triangle
   void scene_test_9(){
+    debug("TEST 9. CUBE WATERTIGHT CHECK - TRIANGLE IN TRIANGLE\n");
     cmesh4::SimpleMesh mesh;
     std::vector<LiteMath::float4> mesh_vertices;
 
@@ -354,6 +359,7 @@ namespace upg
   // Two equal elements in mesh_vertices that are pointed to by
   // different mesh_indices indexes
   void scene_test_10(){
+    debug("TEST 10. EQUAL VERTICES\n");
     cmesh4::SimpleMesh mesh;
     std::vector<LiteMath::float4> mesh_vertices;
 
@@ -390,6 +396,7 @@ namespace upg
 
   // Checking 1 the cube for non-watertight: Indexes are not multiples of three
   void scene_test_11(){
+    debug("TEST 11. CUBE - BROKEN INDEX BUFFER\n");
     cmesh4::SimpleMesh mesh;
     std::vector<LiteMath::float4> mesh_vertices;
 
@@ -421,6 +428,7 @@ namespace upg
   // Checking 2 the cube for non-watertight:
   // Two equal vertices in the same triangle
   void scene_test_12(){
+    debug("TEST 12. CUBE - ZERO AREA TRIANGLE\n");
     cmesh4::SimpleMesh mesh;
     std::vector<LiteMath::float4> mesh_vertices;
 
@@ -451,6 +459,7 @@ namespace upg
 
   // Checking 3 the cube for non-watertight: There are edge(s) that occur only once
   void scene_test_13(){
+    debug("TEST 13. CUBE WITH HOLE\n");
     cmesh4::SimpleMesh mesh;
 
     std::vector<LiteMath::float4> mesh_vertices;
@@ -484,6 +493,7 @@ namespace upg
   // Checking 4 the cube for non-watertight:
   // There are edge(s) that occur more than twice
   void scene_test_14(){
+    debug("TEST 14. CUBE - NOT TWO-MANIFOLD\n");
     cmesh4::SimpleMesh mesh;
     std::vector<LiteMath::float4> mesh_vertices;
 
