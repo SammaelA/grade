@@ -9,7 +9,7 @@
 
 
 
-#include "watertight_mesh.h"
+#include "LiteRT/utils/watertight_mesh.h"
 #include "LiteScene/cmesh4.h"
 
 
