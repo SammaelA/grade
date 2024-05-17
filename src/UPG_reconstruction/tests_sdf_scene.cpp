@@ -9,7 +9,7 @@
 
 
 
-#include "LiteRT/utils/watertight_mesh.h"
+#include "LiteRT/utils/mesh.h"
 #include "LiteScene/cmesh4.h"
 
 
@@ -214,7 +214,7 @@ namespace upg
     debug("TEST 5. TEAPOT WATERTIGHT CHECK\n");
     auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/bunny.vsgf");
     
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
       debug("passed\n");
     else
@@ -246,7 +246,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
       debug("passed\n");
     else
@@ -279,7 +279,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
       debug("passed\n");
     else
@@ -312,7 +312,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
       debug("passed\n");
     else
@@ -348,7 +348,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
       debug("passed\n");
     else
@@ -382,7 +382,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
       debug("passed\n");
     else
@@ -418,7 +418,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 0)
       debug("passed\n");
     else
@@ -450,7 +450,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 0)
       debug("passed\n");
     else
@@ -483,7 +483,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 0)
       debug("passed\n");
     else
@@ -517,7 +517,7 @@ namespace upg
 
     mesh.indices = mesh_indices;
 
-    bool res = watertight_mesh(mesh);
+    bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 0)
       debug("passed\n");
     else
