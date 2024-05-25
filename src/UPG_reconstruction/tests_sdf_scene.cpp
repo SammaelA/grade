@@ -212,7 +212,7 @@ namespace upg
   // Checking the teapot for watertight
   void scene_test_5(){
     debug("TEST 5. TEAPOT WATERTIGHT CHECK\n");
-    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/bunny.vsgf");
+    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/teapot.vsgf");
     
     bool res = cmesh4::check_watertight_mesh(mesh);
     if(res == 1)
