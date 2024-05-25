@@ -231,6 +231,7 @@ set(SCENE_LOADER_SRC
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/gaussian_field.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/hp_octree.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/watertight_mesh.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/hp_octree_builder_stub.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/tests.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/benchmark.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/NeuralRT/NeuralRT.cpp
