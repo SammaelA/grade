@@ -947,7 +947,6 @@ auto t2 = std::chrono::steady_clock::now();
     SparseOctreeSettings settings;
     settings.build_type = SparseOctreeBuildType::DEFAULT;
     settings.depth = 8;
-    settings.min_remove_level = 4;
     settings.remove_thr = 0.0001f;
 
     std::vector<SdfFrameOctreeNode> frame_nodes;
@@ -1006,7 +1005,6 @@ auto t2 = std::chrono::steady_clock::now();
     SparseOctreeSettings settings;
     settings.build_type = SparseOctreeBuildType::DEFAULT;
     settings.depth = 9;
-    settings.min_remove_level = 4;
     settings.remove_thr = 0.0f;
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
