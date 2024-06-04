@@ -892,8 +892,7 @@ auto t2 = std::chrono::steady_clock::now();
     float timings[4] = {0,0,0,0};
 
     auto pRender = CreateMultiRenderer("GPU");
-    pRender->SetScene({(unsigned)(octree.get_nodes().size()), 
-                      (const SdfOctreeNode *)octree.get_nodes().data()});
+    pRender->SetScene(octree.get_nodes());
 
   MultiRenderPreset preset = getDefaultPreset();
   preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
@@ -938,54 +937,6 @@ auto t2 = std::chrono::steady_clock::now();
     }
   }
 
-  void LiteRT_framed_octree_test()
-  {
-    SceneDesc s = scene_chair();
-    ProceduralSdf sdf(s.first);
-    sdf.set_parameters(s.second.p);
-    SparseOctreeBuilder builder;
-    SparseOctreeSettings settings;
-    settings.build_type = SparseOctreeBuildType::DEFAULT;
-    settings.depth = 8;
-    settings.remove_thr = 0.0001f;
-
-    std::vector<SdfFrameOctreeNode> frame_nodes;
-
-    builder.construct_bottom_up_frame([&sdf](const float3 &p) { return sdf.get_distance(p); }, 
-                                      settings, frame_nodes);
-    
-    CameraSettings camera;
-    camera.origin = float3(0,0,3);
-    camera.target = float3(0,0,0);
-    camera.up = float3(0,1,0);
-
-    unsigned W = 1024, H = 1024;
-    LiteImage::Image2D<uint32_t> image(W, H);
-    float timings[4] = {0,0,0,0};
-
-    MultiRenderPreset preset = getDefaultPreset();
-    preset.sdf_octree_sampler = SDF_OCTREE_SAMPLER_CLOSEST;
-    preset.mode = MULTI_RENDER_MODE_LAMBERT;
-    preset.sdf_frame_octree_blas = SDF_OCTREE_BLAS_DEFAULT;
-    preset.sdf_frame_octree_intersect = SDF_OCTREE_NODE_INTERSECT_ST;
-
-    auto pRender = CreateMultiRenderer("GPU");
-    pRender->SetPreset(preset);
-    pRender->SetScene({(unsigned)frame_nodes.size(), 
-                       frame_nodes.data()});
-
-auto t1 = std::chrono::steady_clock::now();
-    pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);
-    pRender->GetExecutionTime("CastRaySingleBlock", timings);
-auto t2 = std::chrono::steady_clock::now();
-
-    float time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    debug("%s rendered in %.1f ms. %d kRays/s\n", "SDF Framed Octree", time_ms, (int)((W * H) / time_ms));
-    debug("CastRaySingleBlock took %.1f ms\n", timings[0]);
-
-    LiteImage::SaveImage<uint32_t>("saves/liteRT_framed_octree_test.bmp", image);    
-  }
-
   void mesh_bvh_test()
   {
     auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/teapot.vsgf");
@@ -1008,14 +959,6 @@ auto t2 = std::chrono::steady_clock::now();
     settings.remove_thr = 0.0f;
     std::vector<SdfFrameOctreeNode> frame_nodes;
 
-    {
-    //to test before/after performance
-    //SparseOctreeBuilder builder_2;
-    //std::vector<SdfFrameOctreeNode> frame_nodes_2;
-    //builder_2.construct_bottom_up_frame([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, 
-    //                                    settings, frame_nodes_2);
-    }
-
     builder.construct([&mesh_bvh](const float3 &p) { return mesh_bvh.get_signed_distance(p); }, settings);
     builder.convert_to_frame_octree(frame_nodes);
     
@@ -1036,8 +979,7 @@ auto t2 = std::chrono::steady_clock::now();
 
     auto pRender = CreateMultiRenderer("GPU");
     pRender->SetPreset(preset);
-    pRender->SetScene({(unsigned)frame_nodes.size(), 
-                       frame_nodes.data()});
+    pRender->SetScene(frame_nodes);
 
 auto t1 = std::chrono::steady_clock::now();
     pRender->Render(image.data(), W, H, camera.get_view(), camera.get_proj(false), preset);

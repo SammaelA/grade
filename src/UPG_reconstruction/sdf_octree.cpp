@@ -33,7 +33,6 @@ namespace upg
   {
     SparseOctreeSettings settings;
     settings.depth = 8;
-    BlockSparseOctree<float> bso;
-    octree.construct_bottom_up(sdf, settings);
+    octree.construct(sdf, settings);
   }
 }
