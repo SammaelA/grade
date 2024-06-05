@@ -125,7 +125,7 @@ namespace upg
       /*logerr("sample %f %f %f",p.x,p.y,p.z);*/ return reference_sdf.get_distance(p); });
 
     SparseOctreeBuilder &octree = dynamic_cast<OctreeSdfNode*>(g_sdf.root)->octree;
-    auto octree_sdf = get_SdfOctreeFunction({(unsigned)(octree.get_nodes().size()), octree.get_nodes().data()});
+    auto octree_sdf = get_SdfOctreeFunction(octree.get_nodes());
 
     unsigned tries = 50000;
     unsigned errors = 0;
