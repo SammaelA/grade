@@ -524,6 +524,159 @@ namespace upg
       debug("error\n");
   }
 
+  ////////////////////////// Removing holes ///////////////////////////////////
+  
+  void scene_test_15(){
+    debug("TEST 15. Removing one hole from a simple mesh\n");
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(2, 2, 2, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      6, 1, 2, 1, 4, 6, 2, 1, 3, 1, 4, 3, 2, 6, 5,
+      4, 6, 5, 5, 3, 4
+    };
+
+    mesh.indices = mesh_indices;
+
+    int ind = -1;
+    bool fl = 0;
+    bool res = cmesh4::check_watertight_mesh(mesh);
+
+    if(res == 1)
+      debug("passed\n");
+    else{
+      mesh  = cmesh4::removing_holes(mesh, ind, fl);
+      if(ind == -1)
+          ind = 0;
+
+      if(ind == 1 && fl == 1)
+        debug("passed\n");
+      else if(ind != 1 && fl == 1)
+        debug("error: %d/1 holes found, %d of the holes found are closed\n", ind, fl);
+      else
+        debug(" error: %d/1 holes found, but none of the holes are patched", ind);
+    }
+  }
+
+  void scene_test_16(){
+    debug("TEST 16. Removing two holes from a simple mesh\n");
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(2, 2, 2, 8));
+    mesh_vertices.push_back(float4(1, 0, 1, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(0, 1, 1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      6, 1, 2, 2, 1, 3, 1, 4, 3, 2, 6, 5,
+      4, 6, 5, 5, 3, 4
+    };
+
+    mesh.indices = mesh_indices;
+
+    int ind = -1;
+    bool fl = 0;
+    bool res = cmesh4::check_watertight_mesh(mesh);
+
+    if(res == 1)
+      debug("passed\n");
+    else{
+      mesh  = cmesh4::removing_holes(mesh, ind, fl);
+      if(ind == -1)
+          ind = 0;
+
+      if(ind == 2 && fl == 1)
+        debug("passed\n");
+      else if(ind != 2 && fl == 1)
+        debug("error: %d/2 holes found, %d of the holes found are closed\n", ind, fl);
+      else
+        debug(" error: %d/2 holes found, but none of the holes are patched", ind);
+    }
+  }
+
+  void scene_test_17(){
+    debug("TEST 17. Removing one hole with four vertices from a simple mesh\n");
+
+    cmesh4::SimpleMesh mesh;
+    std::vector<LiteMath::float4> mesh_vertices;
+
+    mesh_vertices.push_back(float4(2, 2, 2, 8));
+    mesh_vertices.push_back(float4(0, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 1, 8));
+    mesh_vertices.push_back(float4(0, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 0, 8));
+    mesh_vertices.push_back(float4(1, 1, 0, 8));
+    mesh_vertices.push_back(float4(1, 0, 1.1, 8));
+
+    mesh.vPos4f = mesh_vertices;
+
+    std::vector<unsigned int> mesh_indices = {
+      3, 1, 2, 6, 1, 2, 3, 4, 1, 3, 4, 5, 6, 4, 1, 3, 2, 5
+    };
+
+    mesh.indices = mesh_indices;
+
+    int ind = -1;
+    bool fl = 0;
+    bool res = cmesh4::check_watertight_mesh(mesh);
+    
+    if(res == 1)
+      debug("passed\n");
+    else{
+      mesh  = cmesh4::removing_holes(mesh, ind, fl);
+      if(ind == -1)
+          ind = 0;
+
+      if(ind == 1 && fl == 1)
+        debug("passed\n");
+      else if(ind != 1 && fl == 1)
+        debug("error: %d/1 holes found, %d of the holes found are closed\n", ind, fl);
+      else
+        debug(" error: %d/1 holes found, but none of the holes are patched", ind);
+    }
+  }
+
+  void scene_test_18(){
+    debug("TEST 18. Removing holes in the teapot\n");
+
+    auto mesh = cmesh4::LoadMeshFromVSGF("modules/LiteRT/scenes/01_simple_scenes/data/teapot.vsgf");
+
+    int ind = -1;
+    bool fl = 0;
+    bool res = cmesh4::check_watertight_mesh(mesh);
+    
+    if(res == 1)
+      debug("passed\n");
+    else{
+      mesh  = cmesh4::removing_holes(mesh, ind, fl);
+      if(ind == -1)
+          ind = 0;
+
+      if(ind == 6 && fl == 1)
+        debug("passed\n");
+      else if(ind != 6 && fl == 1)
+        debug("error: %d/6 holes found, %d of the holes found are closed\n", ind, fl);
+      else
+        debug(" error: %d/6 holes found, but none of the holes are patched", ind);
+    }
+  }
+
   void perform_tests_sdf_scene(const std::vector<int> &test_ids)
   {
     std::vector<int> tests = test_ids;
@@ -532,7 +685,9 @@ namespace upg
       scene_test_1, scene_test_2, scene_test_3, scene_test_4,
 
       scene_test_5, scene_test_6, scene_test_7, scene_test_8, scene_test_9,
-      scene_test_10, scene_test_11, scene_test_12, scene_test_13, scene_test_14
+      scene_test_10, scene_test_11, scene_test_12, scene_test_13, scene_test_14,
+
+      scene_test_15, scene_test_16, scene_test_17, scene_test_18
     };
 
     if (tests.empty())
