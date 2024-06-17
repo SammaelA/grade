@@ -233,6 +233,9 @@ set(SCENE_LOADER_SRC
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/watertight_mesh.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/sdf_converter.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/hp_octree_builder_stub.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/hydra_stub.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/marching_cubes.cpp
+    ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/sdf_smoother.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/utils/sparse_octree_2.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/tests.cpp
     ${CMAKE_SOURCE_DIR}/modules/LiteRT/tests/benchmark.cpp
